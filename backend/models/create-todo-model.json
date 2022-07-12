@@ -3,14 +3,11 @@
   "title": "group",
   "type": "object",
   "properties": {
-    "name": {
+    "content": {
       "type": "string",
       "minLength": 1
-    },
-    "dueDate": {
-      "type": "string"
     }
   },
-  "required": ["name", "dueDate"],
+  "required": ["content"],
   "additionalProperties": false
 }

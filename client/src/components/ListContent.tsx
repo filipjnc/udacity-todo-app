@@ -1,14 +1,14 @@
-import { ClipboardText } from "phosphor-react";
-import { ITask } from "./List";
-import styles from "./ListContent.module.css";
-import ListItem from "./ListItem";
+import { ClipboardText } from 'phosphor-react'
+import { ITodo } from '../types/Todo'
+import styles from './ListContent.module.scss'
+import ListItem from './ListItem'
 
 export interface IListContentProps {
-  tasks: ITask[];
-  onDelete: (taskId: string) => void;
-  onSelect: (taskId: string) => void;
-  onUploadAttachment: (taskId: string) => void;
-  onDeleteAttachment: (taskId: string) => void;
+  tasks: ITodo[]
+  onDelete: (todoId: string) => void
+  onSelect: (todoId: string, isSelected: boolean) => void
+  onUploadAttachment: (todoId: string, file: File, onSettled?: () => void) => void
+  onDeleteAttachment: (todoId: string, onSettled?: () => void) => void
 }
 
 export default function ListContent({
@@ -16,12 +16,10 @@ export default function ListContent({
   onDelete,
   onSelect,
   onUploadAttachment,
-  onDeleteAttachment,
+  onDeleteAttachment
 }: IListContentProps) {
-  const tasksCount = tasks.length;
-  const doneTasksCount = tasks.filter(
-    (task: ITask) => task.isDone === true
-  ).length;
+  const tasksCount = tasks.length
+  const doneTasksCount = tasks.filter((task: ITodo) => task.isDone === true).length
 
   return (
     <div className={styles.listContent}>
@@ -31,7 +29,7 @@ export default function ListContent({
           <span>{tasksCount}</span>
         </div>
         <div className={styles.listDoneTaskCounter}>
-          Done Tasks
+          Completed
           <span>
             {doneTasksCount} of {tasksCount}
           </span>
@@ -45,18 +43,18 @@ export default function ListContent({
         </div>
       ) : (
         <main className={styles.listItensContainer}>
-          {tasks.map((task: ITask) => (
+          {tasks.map((task: ITodo) => (
             <ListItem
               onDelete={onDelete}
               onSelect={onSelect}
               onUploadAttachment={onUploadAttachment}
               onDeleteAttachment={onDeleteAttachment}
-              key={`${task.id}-${task.content}`}
+              key={`${task.todoId}-${task.content}`}
               {...task}
             ></ListItem>
           ))}
         </main>
       )}
     </div>
-  );
+  )
 }

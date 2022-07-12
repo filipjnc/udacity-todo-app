@@ -1,12 +1,11 @@
 org: filipjnc
-app: udacity-todo-app
+app: serverless-todo-app
 service: udacity-todo-app
 
 plugins:
   - serverless-webpack
   - serverless-iam-roles-per-function
   - serverless-plugin-tracing
-  - serverless-reqvalidator-plugin
 
 provider:
   name: aws
@@ -20,17 +19,16 @@ provider:
     lambda: true
     apiGateway: true
 
-  # Use these variables in the functions and resources section below. For example,
-  # ${self:provider.environment.ATTACHMENT_S3_BUCKET}
   environment:
     TODOS_TABLE: Todos-${self:provider.stage}
     TODOS_LSI_CREATED_AT: CreatedAtIndex
     ATTACHMENT_S3_BUCKET: udacity-todo-app-attachments-${self:provider.stage}
     SIGNED_URL_EXPIRATION: 300
-    AUTH_0_SECRET: _yslkwVdaMxqrZ_cL1pbQE23xnYlSd9-yw-2lASfB1si6MAnZMV4LqQLRRQ3ROY7
+    AUTH0_JWKS_URI: https://filipjnc-udacity.us.auth0.com/.well-known/jwks.json
+    AUTH0_DOMAIN: https://filipjnc-udacity.us.auth0.com/
+    AUTH0_AUDIENCE: https://filipjnc-udacity.us.auth0.com/api/v2/
 
   logs:
-    # Enable API Gateway logs
     restApi: true
 
   iam:
@@ -75,7 +73,12 @@ functions:
         Action:
           - dynamodb:Scan
           - dynamodb:Query
-        Resource: !GetAtt TodosTable.Arn
+        Resource:
+          - !GetAtt TodosTable.Arn
+          - !Join
+            - ''
+            - - !GetAtt TodosTable.Arn
+              - '/index/*'
 
   CreateTodo:
     handler: src/lambda/http/createTodo.handler
@@ -85,7 +88,6 @@ functions:
           path: todos
           cors: true
           authorizer: Auth
-
           request:
             schemas:
               application/json: ${file(models/create-todo-model.json)}

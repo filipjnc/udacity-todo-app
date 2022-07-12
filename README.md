@@ -1,6 +1,6 @@
 # Udacity Todo App
 
-This Todo App is the final project CAPSTONE from the nanodegree Cloud Developer at Udacity.
+This Todo App is the final project of the nanodegree Cloud Developer from Udacity.
 
 The frontend is a React application.
 The backend follows the serverless architecture and is deployed on AWS.

@@ -1,8 +1,8 @@
 import { createLogger } from '../utils/logger'
 import { TodoItem } from '../models/TodoItem'
-import { TodoUpdate } from '../models/TodoUpdate'
 import { docClient } from '.'
 import { s3 } from '.'
+import { UpdateTodoRequest } from '../requests/UpdateTodoRequest'
 
 const logger = createLogger('TodosAccess')
 const todosTable = process.env.TODOS_TABLE
@@ -27,6 +27,8 @@ export async function getTodosForUser(userId: string): Promise<TodoItem[]> {
   const response = await docClient
     .query({
       TableName: todosTable,
+      IndexName: process.env.TODOS_LSI_CREATED_AT,
+      ScanIndexForward: false,
       KeyConditionExpression: 'userId = :userId',
       ExpressionAttributeValues: {
         ':userId': userId
@@ -38,8 +40,8 @@ export async function getTodosForUser(userId: string): Promise<TodoItem[]> {
 }
 
 export async function createTodo(todo: TodoItem): Promise<TodoItem> {
-  const { userId, todoId, name } = todo
-  logger.info('Creating todo', { userId, todoId, name })
+  const { userId, todoId, content } = todo
+  logger.info('Creating todo', { userId, todoId, content })
 
   try {
     await docClient
@@ -54,10 +56,25 @@ export async function createTodo(todo: TodoItem): Promise<TodoItem> {
   }
 }
 
+const generateUpdateQuery = (fields) => {
+  let exp = {
+    UpdateExpression: 'set',
+    ExpressionAttributeNames: {},
+    ExpressionAttributeValues: {}
+  }
+  Object.entries(fields).forEach(([key, item]) => {
+    exp.UpdateExpression += ` #${key} = :${key},`
+    exp.ExpressionAttributeNames[`#${key}`] = key
+    exp.ExpressionAttributeValues[`:${key}`] = item
+  })
+  exp.UpdateExpression = exp.UpdateExpression.slice(0, -1)
+  return exp
+}
+
 export async function updateTodo(
   userId: TodoItem['userId'],
   todoId: TodoItem['todoId'],
-  update: TodoUpdate
+  update: UpdateTodoRequest
 ): Promise<TodoItem> {
   logger.info('Updating todo', { userId, todoId })
 
@@ -66,15 +83,7 @@ export async function updateTodo(
       .update({
         TableName: todosTable,
         Key: { userId, todoId },
-        ExpressionAttributeNames: {
-          '#N': 'name'
-        },
-        UpdateExpression: 'SET #N = :name, dueDate = :dueDate, done = :done',
-        ExpressionAttributeValues: {
-          ':name': update.name,
-          ':dueDate': update.dueDate,
-          ':done': update.done
-        },
+        ...generateUpdateQuery(update),
         ReturnValues: 'ALL_NEW'
       })
       .promise()
@@ -109,17 +118,21 @@ export async function getUploadUrl(userId: string, todoId: string, attachmentId:
   })
   logger.info('Updating todo attachment', { userId, todoId })
   try {
+    const attachmentUrl = `https://${attachmentBucket}.s3.amazonaws.com/${attachmentId}`
     await docClient
       .update({
         TableName: todosTable,
         Key: { userId, todoId },
         UpdateExpression: 'SET attachmentUrl = :attachmentUrl',
         ExpressionAttributeValues: {
-          ':attachmentUrl': `https://${attachmentBucket}.s3.amazonaws.com/${attachmentId}`
+          ':attachmentUrl': attachmentUrl
         }
       })
       .promise()
-    return uploadUrl
+    return {
+      uploadUrl,
+      attachmentUrl
+    }
   } catch (err) {
     logger.info('Error updating todo attachment', { userId, todoId, err })
   }

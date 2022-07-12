@@ -1,88 +1,69 @@
+import axios from 'axios'
 import { apiEndpoint } from '../config'
-import { Todo } from '../types/Todo'
-import { CreateTodoRequest } from '../types/CreateTodoRequest'
-import Axios from 'axios'
-import { UpdateTodoRequest } from '../types/UpdateTodoRequest'
+import { ITodo, ICreateTodoPayload, IUpdateTodoPayload } from '../types/Todo'
 
-export async function getTodos(idToken: string): Promise<Todo[]> {
-  console.log('Fetching todos')
-
-  const response = await Axios.get(`${apiEndpoint}/todos`, {
+export async function getTodos(token: string): Promise<ITodo[]> {
+  const response = await axios.get(`${apiEndpoint}/todos`, {
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${idToken}`
+      Authorization: `Bearer ${token}`
     }
   })
-  console.log('Todos:', response.data)
   return response.data
 }
 
-export async function createTodo(
-  idToken: string,
-  newTodo: CreateTodoRequest
-): Promise<Todo> {
-  const response = await Axios.post(
-    `${apiEndpoint}/todos`,
-    JSON.stringify(newTodo),
-    {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${idToken}`
-      }
-    }
-  )
-  return response.data
-}
-
-export async function patchTodo(
-  idToken: string,
-  todoId: string,
-  updatedTodo: UpdateTodoRequest
-): Promise<void> {
-  await Axios.patch(
-    `${apiEndpoint}/todos/${todoId}`,
-    JSON.stringify(updatedTodo),
-    {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${idToken}`
-      }
-    }
-  )
-}
-
-export async function deleteTodo(
-  idToken: string,
-  todoId: string
-): Promise<void> {
-  await Axios.delete(`${apiEndpoint}/todos/${todoId}`, {
+export async function createTodo(token: string, newTodo: ICreateTodoPayload): Promise<ITodo> {
+  const response = await axios.post(`${apiEndpoint}/todos`, JSON.stringify(newTodo), {
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${idToken}`
+      Authorization: `Bearer ${token}`
+    }
+  })
+  return response.data
+}
+
+export async function updateTodo(token: string, todoId: string, updatedTodo: IUpdateTodoPayload): Promise<void> {
+  await axios.patch(`${apiEndpoint}/todos/${todoId}`, JSON.stringify(updatedTodo), {
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`
     }
   })
 }
 
-export async function getUploadUrl(
-  idToken: string,
-  todoId: string
-): Promise<string> {
-  const response = await Axios.post(
-    `${apiEndpoint}/todos/${todoId}/attachment`,
-    '',
-    {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${idToken}`
-      }
+export async function deleteTodo(token: string, todoId: string): Promise<void> {
+  await axios.delete(`${apiEndpoint}/todos/${todoId}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`
     }
-  )
-  return response.data.uploadUrl
+  })
 }
 
-export async function uploadFile(
-  uploadUrl: string,
-  file: Buffer
-): Promise<void> {
-  await Axios.put(uploadUrl, file)
+export async function uploadAttachment(token: string, todoId: string, file: File): Promise<string> {
+  const response = await axios.post(`${apiEndpoint}/todos/${todoId}/attachment`, '', {
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`
+    }
+  })
+  const { uploadUrl, attachmentUrl } = response.data.uploadUrl
+  await axios.put(uploadUrl, file, {
+    headers: {
+      'Content-Type': file.type
+    }
+  })
+  return attachmentUrl
+}
+
+export async function deleteAttachment(token: string, todoId: string): Promise<void> {
+  const update: IUpdateTodoPayload = {
+    attachmentUrl: null
+  }
+  await axios.patch(`${apiEndpoint}/todos/${todoId}`, JSON.stringify(update), {
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`
+    }
+  })
 }

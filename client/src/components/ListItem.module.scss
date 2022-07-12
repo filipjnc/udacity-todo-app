@@ -53,13 +53,23 @@
 .listItemUploadAttachmentButton,
 .listItemDeleteAttachmentButton,
 .listItemDownloadAttachmentButton {
-  grid-area: delete;
   display: flex;
   background-color: transparent;
   border: 0;
   color: var(--gray-300);
   cursor: pointer;
   transition: color 0.2s;
+}
+
+.listItemDeleteButton {
+  grid-area: delete;
+}
+.listItemUploadAttachmentButton,
+.listItemDeleteAttachmentButton {
+  grid-area: attachment;
+}
+.listItemDownloadAttachmentButton {
+  grid-area: download;
 }
 
 .listItemDeleteButton:hover,
@@ -79,8 +89,8 @@
   .listItem {
     display: grid;
     grid-template-areas:
-      "toggle delete"
-      "text text";
+      'toggle delete attachment download'
+      'text text text text';
     grid-template-columns: fit-content fit-content;
     grid-template-rows: fit-content fit-content;
     place-items: center;
